@@ -1,6 +1,7 @@
 package com.swastik.service.order.entity;
 
 import java.io.Serializable;
+
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
@@ -10,16 +11,17 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
-
-@Getter
 @Setter
-@AllArgsConstructor
-@NoArgsConstructor
+@Getter
 @Entity
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(schema = "swastikorder", name = "order_mast")
 public class OrderMastEntity implements Serializable{
 	
 	/**
