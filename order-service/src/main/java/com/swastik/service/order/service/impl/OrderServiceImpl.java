@@ -1,5 +1,6 @@
 package com.swastik.service.order.service.impl;
 
+import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.UUID;
 
@@ -10,6 +11,9 @@ import org.springframework.stereotype.Service;
 
 import com.swastik.service.order.dto.OrderCreateDto;
 import com.swastik.service.order.dto.OrderCreateResponse;
+import com.swastik.service.order.dto.OrderItem;
+import com.swastik.service.order.entity.OrderHistEntity;
+import com.swastik.service.order.entity.OrderItemEntity;
 import com.swastik.service.order.entity.OrderMastEntity;
 import com.swastik.service.order.repository.OrderHistRepository;
 import com.swastik.service.order.repository.OrderItemRepository;
@@ -36,6 +40,7 @@ public class OrderServiceImpl implements OrderService{
 		// TODO Auto-generated method stub
 		
 		OrderCreateResponse response = null;
+		BigDecimal totalAmount = BigDecimal.ZERO;
 		
 		log.info("[Create-Order] entered {} ",request);
 		
@@ -55,7 +60,43 @@ public class OrderServiceImpl implements OrderService{
 		if(orderMastEntity !=null && orderMastEntity.getId() != null) {
 			log.info("[Create-Order] order created successfully with order id : {} ",orderMastEntity.getId());
 			
+			// Process each item in the order
+	        for (OrderItem itemRequest : request.getItems()) {
+	            // Fetch product price
+	            BigDecimal productPrice = itemRequest.getPrice();
+
+	            // Calculate subtotal for the product
+	            BigDecimal subtotal = productPrice.multiply(BigDecimal.valueOf(itemRequest.getQuantity()));
+
+	            // Add to total order amount
+	            totalAmount = totalAmount.add(subtotal);
+
+	            // Save order item in order_items table
+	            OrderItemEntity orderItemEntity = new OrderItemEntity();
+	            orderItemEntity.setOrderId(orderMastEntity.getId());
+	            orderItemEntity.setProductId(UUID.fromString(itemRequest.getProductId()));
+	            orderItemEntity.setQuantity(itemRequest.getQuantity());
+	            orderItemEntity.setPrice(productPrice);
+	            orderItemEntity.setCreatedBy("Order Service CreateOrder");
+	            orderItemEntity.setCreatedAt(LocalDateTime.now());
+	            
+	            orderItemRepository.save(orderItemEntity);
+	        }
+	        
+	        
+	        log.info("[Create-Order] save order history");
+	        OrderHistEntity orderHistEntity = new OrderHistEntity();
+	        orderHistEntity.setOrderId(orderMastEntity.getId());
+	        orderHistEntity.setOrderStatus("PENDING");
+	        orderHistEntity.setCreatedBy("Order Service CreateOrder");
+	        orderHistEntity.setCreatedAt(LocalDateTime.now());
+	        orderHistRepository.save(orderHistEntity);
+	        
 			
+	        //Updating the total amount in order master table.
+	        orderMastEntity.setTotalAmount(totalAmount);
+	        orderMastEntity = orderMastRepository.save(orderMastEntity);
+	        
 			response = OrderCreateResponse.builder().success(true).orderId(orderMastEntity.getId().toString()).
 					orderStatus("PENDING").
 					build();
